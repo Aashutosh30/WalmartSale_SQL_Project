@@ -1,0 +1,5 @@
+create table sales
+(Invoice_ID varchar primary key, Branch	varchar, City	varchar, Customer_type	varchar, Gender	varchar, Product_line	varchar, Unit_price	float,
+	Quantity int, Tax float, Total	float, Date	date, Time	time, Payment	varchar, cogs float,	gross_margin_percentage	 float, gross_income	float,
+	Rating float );
+
