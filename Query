@@ -95,5 +95,226 @@ group by product_line
 order by tax 
 limit 1
 
+-- Fetch each product line and add a column to those product line showing "Good", "Bad". Good if its greater than average quantity of sale.
+
+SELECT 
+	AVG(quantity) AS avg_qnty
+FROM sales;
+
+select product_line, 
+CASE 
+	WHEN AVG(quantity) > 6 THEN 'good'
+else 'bad'
+end as remark
+from sales 
+group by product_line
+
+Alternative way by inserting new column in the table:
+
+alter table sales
+add column product_line_performance varchar
+
+alter table sales
+add column avg_quantity float
+
+UPDATE sales
+SET avg_quantity = total_sum.avg
+FROM (
+    SELECT avg(quantity) AS avg
+    FROM sales
+) AS total_sum;
+
+	
+update sales
+set product_line_performance= 'good'
+where quantity>avg_quantity
+
+update sales
+set product_line_performance= 'bad'
+where quantity<avg_quantity
+
+-- Which branch sold more products than average product sold?
+
+select branch, city from sales
+where quantity>avg_quantity
+
+NOTE: ALTERNATE QUERY(IF AVG_QUANTITY COLUMN IS NOT ADDED IN THE TABLE)
+
+select branch, sum(quantity)
+from sales 
+group by branch
+having sum(quantity)>avg(quantity)
+
+-- What is the most common product line by gender
+SELECT
+	gender,
+    product_line,
+    COUNT(gender) AS total_cnt
+FROM sales
+GROUP BY gender, product_line
+ORDER BY total_cnt DESC;
+
+-- What is the average rating of each product line
+
+select avg(rating) as avg_rating, product_line 
+from sales
+group by product_line 
+order by avg_rating desc
+
+-- --------------------------------------------------------------------
+-- --------------------------------------------------------------------
+
+-- --------------------------------------------------------------------
+-- -------------------------- Customers -------------------------------
+-- --------------------------------------------------------------------
+
+
+-- How many unique customer types does the data have?
+
+select distinct customer_type from sales
+
+-- How many unique payment methods does the data have?
+
+select distinct payment from sales
+
+-- What is the most common customer type?
+
+select customer_type,count(customer_type) from sales
+group by customer_type
+order by count(customer_type) desc
+
+-- Which customer type buys the most(sales)?
+
+select customer_type, sum(total) from sales
+group by customer_type 
+order by sum(total)
+
+-- What is the gender of most of the customers?
+
+SELECT
+	gender,
+	COUNT(*) as gender_cnt
+FROM sales
+GROUP BY gender
+ORDER BY gender_cnt DESC;
+
+-- What is the gender according to the customer type?
+
+select gender, customer_type, count(*)
+from sales 
+group by gender, customer_type
+
+-- What is the gender distribution per branch?
+
+select branch, gender, count(*)
+from sales
+group by gender, branch
+
+ALTERNATE SOLUTION WITH RANK FUNCTION AND CTE FUNCTION.
+
+WITH GenderCounts AS (
+    SELECT 
+        branch,
+        gender,
+        COUNT(*) AS gender_count
+    FROM sales
+    GROUP BY branch, gender
+),
+RankedGenderCounts AS (
+    SELECT 
+        branch,
+        gender,
+        gender_count,
+        RANK() OVER (PARTITION BY branch ORDER BY gender_count DESC) AS rank
+    FROM GenderCounts
+)
+SELECT 
+    branch,
+    gender,
+    gender_count,
+    rank
+FROM RankedGenderCounts
+ORDER BY branch, rank;
+
+--How does the number of sales vary by time of day, and which times of day have the highest number of sales?
+
+select time_of_day, count(*)
+from sales
+group by time_of_day
+order by count(*) desc 
+
+-- Which time of the day do customers give most ratings?
+
+SELECT
+	time_of_day,
+	AVG(rating) AS avg_rating
+FROM sales
+GROUP BY time_of_day
+ORDER BY avg_rating DESC;
+
+-- Which time of the day do customers give most ratings per branch?
+
+select time_of_day, branch, count(rating)
+from sales
+group by branch, time_of_day
+order by count(rating) desc
+
+-- Which day fo the week has the best avg ratings?
+
+select day_name, avg(rating)
+from sales
+group by day_name
+order by avg(rating) desc
+limit 1
+
+-- What is the average rating for each day of the week, and which days of the week have the highest average rating?
+
+SELECT
+	day_name,
+	AVG(rating) AS avg_rating
+FROM sales
+GROUP BY day_name 
+ORDER BY avg_rating DESC;
+
+-- Which day of the week has the best average ratings per branch?
+select day_name, avg(rating), branch 
+from sales
+group by day_name, branch 
+order by avg(rating) desc 
+
+ALTERNATE SOLUTION USING THE RANK FUNCTION AND PARTITIONING BY THE BRANCH.
+
+
+WITH AvgRatings AS (
+    SELECT
+        branch,
+        day_name,
+        AVG(rating) AS avg_rating
+    FROM sales
+    GROUP BY branch, day_name
+),
+RankedRatings AS (
+    SELECT
+        branch,
+        day_name,
+        avg_rating,
+        RANK() OVER (PARTITION BY branch ORDER BY avg_rating DESC) AS rank
+    FROM AvgRatings
+)
+SELECT
+    branch,
+    day_name,
+    avg_rating
+FROM RankedRatings
+WHERE rank = 1
+ORDER BY branch;
+
+-- --------------------------------------------------------------------
+-- --------------------------------------------------------------------
+
+-- --------------------------------------------------------------------
+-- ---------------------------- Sales ---------------------------------
+-- --------------------------------------------------------------------
+
 
 
