@@ -316,5 +316,88 @@ ORDER BY branch;
 -- ---------------------------- Sales ---------------------------------
 -- --------------------------------------------------------------------
 
+-- Number of sales made in each time of the day per weekday 
 
+NOTE: THIS HAS MULTIPLE SOLUTIONS.
 
+SELECT
+	time_of_day,
+	COUNT(*) AS total_sales
+FROM sales
+GROUP BY time_of_day 
+ORDER BY total_sales DESC;
+
+Alternate
+SELECT
+	time_of_day,
+	sum(total) as total_sales
+FROM sales
+GROUP BY time_of_day 
+ORDER BY total_sales DESC;
+
+Alternate
+SELECT
+	time_of_day,
+	sum(quantity) as total_sales
+FROM sales
+GROUP BY time_of_day 
+ORDER BY total_sales DESC;
+
+Alternate 
+with quantity_sum as(
+	select time_of_day,
+	sum(quantity) as total_quantity 
+	from sales
+	group by time_of_day
+) 
+select time_of_day, total_quantity,
+rank() over (order by total_quantity desc) 
+from quantity_sum 
+
+-- What is the distribution of quantities sold at different times of day across various days of the week?
+
+select time_of_day, day_name, quantity
+from sales
+group by time_of_day, day_name, quantity;
+
+Alternate solution:
+select time_of_day, day_name, quantity,
+   RANK() over (partition by time_of_day order by quantity desc)
+from sales;
+
+-- Which of the customer types brings the most revenue?
+
+select customer_type, sum(total)
+from sales
+group by customer_type 
+order by sum(total) desc
+
+-- Which city has the largest tax/VAT percent?
+
+SELECT
+	city,
+    AVG(tax) AS avg_tax_pct
+FROM sales
+GROUP BY city 
+ORDER BY avg_tax_pct DESC;
+
+--What is the highest tax amount recorded for each city?
+
+select city, max(tax) 
+from sales
+group by city
+
+-- Which customer type pays the most in VAT?
+
+select customer_type, sum((unit_price*quantity)*tax/100) as vat_paid
+from sales
+group by customer_type
+order by vat_paid desc 
+
+ALTERNATE SOLUTION 
+SELECT
+	customer_type,
+	AVG(tax) AS total_tax
+FROM sales
+GROUP BY customer_type
+ORDER BY total_tax;
